@@ -1,0 +1,52 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+
+const char* ssid = "vivo kaau";
+const char* password = "65uuy25oops";
+ESP8266WebServer server(80);
+
+
+
+void handleScan(){
+ Serial.println("Scanning for WiFi networks...");
+  int numNetworks = WiFi.scanNetworks();
+  Serial.println("Scan completed.");
+
+  String jsonData = "["; 
+
+  if (numNetworks == 0) {
+    jsonData += "{\"error\":\"No networks found\"}";
+  } else {
+    for (int i = 0; i < numNetworks; i++) {
+      if (i > 0) jsonData += ","; 
+      jsonData += "{\"ssid\":\"" + WiFi.SSID(i) + "\",";
+      jsonData += "\"rssi\":" + String(WiFi.RSSI(i)) + "}";
+    }
+  }
+  jsonData += "]";
+
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  server.send(200, "application/json", jsonData); 
+  Serial.println("Network data sent to React Native.");
+}
+
+void setup() { 
+  Serial.begin(115200);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+  Serial.println("Connected to WiFi");
+  Serial.print("ESP8266 IP Address: ");
+  Serial.println(WiFi.localIP());
+ 
+  server.on("/scan", HTTP_GET, handleScan);
+  server.begin();
+}
+
+void loop() {
+  server.handleClient();
+}
